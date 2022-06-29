@@ -682,6 +682,8 @@ ImU32 TextEditor::GetGlyphColor(const Glyph & aGlyph) const
 		return mPalette[(int)PaletteIndex::Comment];
 	if (aGlyph.mMultiLineComment)
 		return mPalette[(int)PaletteIndex::MultiLineComment];
+	if (aGlyph.mChar == ' ' && mShowWhitespaces)
+		return 0x80808080;
 	auto const color = mPalette[(int)aGlyph.mColorIndex];
 	if (aGlyph.mPreprocessor)
 	{
@@ -1053,12 +1055,14 @@ void TextEditor::Render()
 				{
 					if (mShowWhitespaces)
 					{
-						const auto s = ImGui::GetFontSize();
-						const auto x = textScreenPos.x + bufferOffset.x + spaceSize * 0.5f;
-						const auto y = textScreenPos.y + bufferOffset.y + s * 0.5f;
-						drawList->AddCircleFilled(ImVec2(x, y), 1.5f, 0x80808080, 4);
+						// TODO : We should make sure the font has the "middle dot" glyph.
+						mLineBuffer.push_back(0xc2);
+						mLineBuffer.push_back(0xb7);
 					}
-					bufferOffset.x += spaceSize;
+					else
+					{
+						bufferOffset.x += spaceSize;
+					}
 					i++;
 				}
 				else
