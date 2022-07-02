@@ -48,6 +48,7 @@ TextEditor::TextEditor()
 	, mIgnoreImGuiChild(false)
 	, mShowWhitespaces(true)
 	, mStartTime(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count())
+	, mLastTextChangeTime(mStartTime)
 {
 	SetPalette(GetDarkPalette());
 	SetLanguageDefinition(LanguageDefinition::C());
@@ -254,7 +255,7 @@ void TextEditor::DeleteRange(const Coordinates & aStart, const Coordinates & aEn
 			RemoveLine(aStart.mLine + 1, aEnd.mLine + 1);
 	}
 
-	mTextChanged = true;
+	SetTextChanged();
 }
 
 int TextEditor::InsertTextAt(Coordinates& /* inout */ aWhere, const char * aValue)
@@ -300,7 +301,7 @@ int TextEditor::InsertTextAt(Coordinates& /* inout */ aWhere, const char * aValu
 			++aWhere.mColumn;
 		}
 
-		mTextChanged = true;
+		SetTextChanged();
 	}
 
 	return totalLines;
@@ -600,7 +601,7 @@ void TextEditor::RemoveLine(int aStart, int aEnd)
 	mLines.erase(mLines.begin() + aStart, mLines.begin() + aEnd);
 	assert(!mLines.empty());
 
-	mTextChanged = true;
+	SetTextChanged();
 }
 
 void TextEditor::RemoveLine(int aIndex)
@@ -630,7 +631,7 @@ void TextEditor::RemoveLine(int aIndex)
 	mLines.erase(mLines.begin() + aIndex);
 	assert(!mLines.empty());
 
-	mTextChanged = true;
+	SetTextChanged();
 }
 
 TextEditor::Line& TextEditor::InsertLine(int aIndex)
@@ -1175,7 +1176,7 @@ void TextEditor::SetText(const std::string & aText)
 		}
 	}
 
-	mTextChanged = true;
+	SetTextChanged();
 	mScrollToTop = true;
 
 	mUndoBuffer.clear();
@@ -1206,7 +1207,7 @@ void TextEditor::SetTextLines(const std::vector<std::string> & aLines)
 		}
 	}
 
-	mTextChanged = true;
+	SetTextChanged();
 	mScrollToTop = true;
 
 	mUndoBuffer.clear();
@@ -1305,7 +1306,7 @@ void TextEditor::EnterCharacter(ImWchar aChar, bool aShift)
 				mState.mSelectionEnd = end;
 				AddUndo(u);
 
-				mTextChanged = true;
+				SetTextChanged();
 
 				EnsureCursorVisible();
 			}
@@ -1377,7 +1378,7 @@ void TextEditor::EnterCharacter(ImWchar aChar, bool aShift)
 			return;
 	}
 
-	mTextChanged = true;
+	SetTextChanged();
 
 	u.mAddedEnd = GetActualCursorCoordinates();
 	u.mAfter = mState;
@@ -1808,7 +1809,7 @@ void TextEditor::Delete()
 				line.erase(line.begin() + cindex);
 		}
 
-		mTextChanged = true;
+		SetTextChanged();
 
 		Colorize(pos.mLine, 1);
 	}
@@ -1885,7 +1886,7 @@ void TextEditor::Backspace()
 			}
 		}
 
-		mTextChanged = true;
+		SetTextChanged();
 
 		EnsureCursorVisible();
 		Colorize(mState.mCursorPosition.mLine, 1);
@@ -2129,6 +2130,20 @@ std::string TextEditor::GetCurrentLineText()const
 	return GetText(
 		Coordinates(mState.mCursorPosition.mLine, 0),
 		Coordinates(mState.mCursorPosition.mLine, lineLength));
+}
+
+void TextEditor::SetTextChanged()
+{
+	mTextChanged = true;
+	mLastTextChangeTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+}
+
+float TextEditor::GetTimeSinceLastTextChange() const
+{
+	auto timeEnd = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+	auto elapsed = timeEnd - mLastTextChangeTime;
+
+	return float(elapsed) * 0.001f;
 }
 
 void TextEditor::ProcessInputs()

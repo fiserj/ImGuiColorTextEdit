@@ -206,6 +206,7 @@ public:
 	bool IsReadOnly() const { return mReadOnly; }
 	bool IsTextChanged() const { return mTextChanged; }
 	bool IsCursorPositionChanged() const { return mCursorPositionChanged; }
+	float GetTimeSinceLastTextChange() const;
 
 	bool IsColorizerEnabled() const { return mColorizerEnabled; }
 	void SetColorizerEnable(bool aValue);
@@ -306,6 +307,7 @@ private:
 
 	typedef std::vector<UndoRecord> UndoBuffer;
 
+	void SetTextChanged();
 	void ProcessInputs();
 	void Colorize(int aFromLine = 0, int aCount = -1);
 	void ColorizeRange(int aFromLine = 0, int aToLine = 0);
@@ -379,6 +381,7 @@ private:
 	Coordinates mInteractiveStart, mInteractiveEnd;
 	std::string mLineBuffer;
 	uint64_t mStartTime;
+	uint64_t mLastTextChangeTime;
 
 	float mLastClick;
 };
